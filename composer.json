@@ -10,7 +10,7 @@
   "require": {
     "php": ">=8.0",
     "yiisoft/yii2": "~2.0.45",
-    "yiisoft/yii2-queue": "*",
+    "yiisoft/yii2-queue": "*"
   },
   "autoload": {
     "psr-4": {
