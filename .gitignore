@@ -1,0 +1,15 @@
+# Dependency / build artifacts
+/vendor/
+/composer.lock
+
+# Runtime / cache / logs
+/runtime/
+/.idea/
+/.vscode/
+
+# OS / misc
+.DS_Store
+Thumbs.db
+
+# Tests (none currently)
+/tests/

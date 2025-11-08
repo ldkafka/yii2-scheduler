@@ -1,0 +1,58 @@
+<?php
+namespace ldkafka\scheduler;
+
+use yii\queue\JobInterface;
+use yii\base\BaseObject;
+use Yii;
+
+/**
+ * Base class for scheduled jobs.
+ *
+ * Contract:
+ *  - Subclasses MUST implement execute() to perform job work and return truthy on success.
+ *  - The scheduler injects $scheduler and $job_config upon instantiation.
+ *  - When used with yiisoft/yii2-queue, execute($queue) will be called by a worker.
+ *
+ * Lock lifecycle:
+ *  - The Scheduler acquires a cache-based lock before enqueuing/running.
+ *  - On normal completion, the controller releases the lock; the destructor here provides a safety net
+ *    to clear the lock if the process ends unexpectedly.
+ */
+abstract class ScheduledJob extends BaseObject implements JobInterface
+{
+    /** @var Scheduler */
+    public $scheduler;
+    /** @var array|null original job configuration */
+    public $job_config;
+
+    /**
+     * Execute job logic. Return true on success, false on failure.
+     *
+     * Implementation notes:
+     *  - Keep the method idempotent where practical.
+     *  - Use Yii::info/warning/error with category 'scheduler' for consistent logs.
+     *
+     * @param \yii\queue\Queue|null $queue Optional queue instance when executed by a worker
+     * @return bool truthy success indicator
+     * @throws \Throwable for unrecoverable errors (controller will log and release lock)
+     */
+    public function execute($queue = null)
+    {
+        throw new \yii\base\NotSupportedException('You must implement the execute() method in your job class.');
+    }
+
+    /**
+     * Best-effort lock cleanup on object destruction.
+     * Uses the global cache via Scheduler to delete the lock key.
+     */
+    public function __destruct()
+    {
+        if ($this->scheduler && $this->job_config) {
+            try {
+                \Yii::$app->cache?->delete($this->scheduler->cacheRunKey($this->job_config));
+            } catch (\Throwable $e) {
+                \Yii::warning('Failed to clear scheduler lock in destructor: ' . $e->getMessage(), 'scheduler');
+            }
+        }
+    }
+}
