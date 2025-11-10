@@ -157,7 +157,7 @@ class SchedulerController extends Controller
      */
     public function actionShow(): int
     {
-        echo "Showing loaded configuration:\n\n" . $this->scheduler->showConfig();
+        echo "Showing loaded configuration:\n\n" . print_r($this->scheduler->getLoadedConfig(), true);
         return ExitCode::OK;
     }
 

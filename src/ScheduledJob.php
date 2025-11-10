@@ -43,12 +43,8 @@ abstract class ScheduledJob extends BaseObject implements JobInterface
         throw new \yii\base\NotSupportedException('You must implement the execute() method in your job class.');
     }
 
-    /**
-     * Best-effort job cleanup on object destruction.
-     * This is a backup for certain corner cases in addition to the cleanup in Scheduler
-     */
-    public function __destruct()
-    {
-        Scheduler::jobCleanup($this);
-    }
+    // Note: Cleanup is performed by SafeJobWrapper after execute().
+    // Destructor-based cleanup is intentionally removed to avoid duplicate
+    // cache writes and to ensure cleanup originates from the process that
+    // actually executed the job (queue worker vs scheduler process).
 }

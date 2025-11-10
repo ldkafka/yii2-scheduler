@@ -1,6 +1,6 @@
 {
   "name": "ldkafka/yii2-scheduler",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "High-resolution cron-like job scheduler for Yii2 supporting daemon and external cron modes, queue integration, single-instance locks, and drift correction.",
   "type": "library",
   "license": "BSD-3-Clause",
