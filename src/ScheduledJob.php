@@ -1,15 +1,16 @@
 <?php
 namespace ldkafka\scheduler;
 
+use Yii;
 use yii\queue\JobInterface;
 use yii\base\BaseObject;
-use Yii;
+use ldkafka\scheduler\Scheduler;
 
 /**
  * Base class for scheduled jobs.
  *
  * Contract:
- *  - Subclasses MUST implement execute() to perform job work and return truthy on success.
+ *  - Subclasses MUST implement execute() to perform job work and return true on success.
  *  - The scheduler injects $scheduler and $job_config upon instantiation.
  *  - When used with yiisoft/yii2-queue, execute($queue) will be called by a worker.
  *
@@ -20,10 +21,11 @@ use Yii;
  */
 abstract class ScheduledJob extends BaseObject implements JobInterface
 {
-    /** @var Scheduler */
-    public $scheduler;
     /** @var array|null original job configuration */
+    public $job_id;
     public $job_config;
+    public $job_cache_key; // cache key for the job lock
+    public $job_index; // index in the runnig jobs cache array
 
     /**
      * Execute job logic. Return true on success, false on failure.
@@ -42,17 +44,11 @@ abstract class ScheduledJob extends BaseObject implements JobInterface
     }
 
     /**
-     * Best-effort lock cleanup on object destruction.
-     * Uses the global cache via Scheduler to delete the lock key.
+     * Best-effort job cleanup on object destruction.
+     * This is a backup for certain corner cases in addition to the cleanup in Scheduler
      */
     public function __destruct()
     {
-        if ($this->scheduler && $this->job_config) {
-            try {
-                \Yii::$app->cache?->delete($this->scheduler->cacheRunKey($this->job_config));
-            } catch (\Throwable $e) {
-                \Yii::warning('Failed to clear scheduler lock in destructor: ' . $e->getMessage(), 'scheduler');
-            }
-        }
+        Scheduler::jobCleanup($this);
     }
 }
