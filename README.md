@@ -160,15 +160,6 @@ Configure a log target in your `console/config/main.php` if needed:
 - Requires PHP >= 8.0, Yii2 ~2.0.14
 - Optional `pcntl` for graceful signal handling (SIGINT/SIGTERM). On platforms without `pcntl`, the daemon stops when too many ticks are missed (configurable).
 
-## Release checklist
-
-1. Bump version in `composer.json` (e.g. 1.0.0 -> 1.0.1).
-2. Update `CHANGELOG.md` with added/changed/fixed sections.
-3. Tag release: `git tag v1.0.0 && git push --tags`.
-4. Publish to Packagist (ensure GitHub repo is public / accessible).
-5. Verify installation: `composer require ldkafka/yii2-scheduler` in a clean project.
-6. (Optional) Set up a queue worker: `php yii queue/listen` and run daemon.
-
 ## License
 
 BSD-3-Clause
