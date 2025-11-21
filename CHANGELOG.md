@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.5] - 2025-11-21
+### Added
+- **Monitoring Events System**: Scheduler now triggers events throughout job lifecycle for integration with monitoring systems:
+  - `EVENT_JOB_BEFORE_RUN`: Triggered before a job executes (includes job class, config, start time)
+  - `EVENT_JOB_AFTER_RUN`: Triggered after successful job execution (includes result, start/end time, duration)
+  - `EVENT_JOB_ERROR`: Triggered when job throws exception (includes error message, exception class, trace)
+  - `EVENT_JOB_BLOCKED`: Triggered when job is blocked by single-instance lock (includes reason, running time)
+  - `EVENT_JOB_TIMEOUT`: Reserved for future timeout detection
+- **SchedulerJobEvent class**: Typed event class with properties for job monitoring (job_class, job_config, start_time, end_time, result, error, exception, trace, reason, running_time)
+- Event triggers integrated into SafeJobWrapper for both sync and async job execution
+- Event triggers in Scheduler::canRun() for blocked job detection
+
+### Changed
+- SafeJobWrapper now includes monitoring event triggers in execute() method
+- Enhanced observability for production monitoring and debugging
+
 ## [1.0.4] - 2025-11-10
 ### Added
 - Lock metadata now includes timestamp: `{pid, host, ts}` for better observability and future heartbeat support.
@@ -74,6 +90,7 @@ All notable changes to this project will be documented in this file.
 - Queue integration requires `yiisoft/yii2-queue`; jobs run inline if queue not configured.
 - Requires Symfony Process v4.x for yii2-queue compatibility.
 
+[1.0.5]: https://github.com/ldkafka/yii2-scheduler/releases/tag/v1.0.5
 [1.0.4]: https://github.com/ldkafka/yii2-scheduler/releases/tag/v1.0.4
 [1.0.3]: https://github.com/ldkafka/yii2-scheduler/releases/tag/v1.0.3
 [1.0.1]: https://github.com/ldkafka/yii2-scheduler/releases/tag/v1.0.1

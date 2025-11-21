@@ -41,6 +41,13 @@ class Scheduler extends Component implements BootstrapInterface
     public const SCHEDULER_LOCK_CACHE_KEY = 'scheduler_cache_lock';
     public const RUNNING_JOBS_CACHE_KEY = 'scheduler_running_jobs';
 
+    // Monitoring event constants
+    public const EVENT_JOB_BEFORE_RUN = 'jobBeforeRun';
+    public const EVENT_JOB_AFTER_RUN = 'jobAfterRun';
+    public const EVENT_JOB_ERROR = 'jobError';
+    public const EVENT_JOB_TIMEOUT = 'jobTimeout';
+    public const EVENT_JOB_BLOCKED = 'jobBlocked';
+
     // $config and $jobs are from the component configuration and are set by the constructor 
     public $config =[];
     public $jobs = [];
@@ -823,6 +830,17 @@ class Scheduler extends Component implements BootstrapInterface
             $running_time = time() - ($first_job['start_time'] ?? 0);
 
             Yii::warning("Job {$job_config['class']} is already running for {$running_time} seconds.", 'scheduler');
+            
+            // Trigger EVENT_JOB_BLOCKED for monitoring
+            $this->trigger(self::EVENT_JOB_BLOCKED, new \yii\base\Event([
+                'data' => [
+                    'job_id' => $job_id,
+                    'job_config' => $job_config,
+                    'reason' => 'single_instance',
+                    'running_time' => $running_time,
+                ],
+            ]));
+            
             return false;
         }
         return true;

@@ -150,6 +150,46 @@ Configure a log target in your `console/config/main.php` if needed:
 ],
 ```
 
+## Monitoring Events
+
+The scheduler triggers events throughout job lifecycle for integration with monitoring systems. Attach event handlers in your scheduler configuration:
+
+```php
+'scheduler' => [
+    'class' => ldkafka\scheduler\Scheduler::class,
+    'on jobBeforeRun' => function ($event) {
+        // $event is SchedulerJobEvent with: job_class, job_config, start_time
+        Yii::info("Starting job: {$event->job_class}", 'monitoring');
+    },
+    'on jobAfterRun' => function ($event) {
+        // $event includes: result, start_time, end_time
+        $duration = $event->end_time - $event->start_time;
+        Yii::info("Job {$event->job_class} completed in {$duration}s", 'monitoring');
+    },
+    'on jobError' => function ($event) {
+        // $event includes: error, exception, trace, error_time
+        Yii::error("Job {$event->job_class} failed: {$event->error}", 'monitoring');
+    },
+    'on jobBlocked' => function ($event) {
+        // $event->data includes: job_id, job_config, reason, running_time
+        $data = $event->data;
+        Yii::warning("Job {$data['job_config']['class']} blocked: {$data['reason']}", 'monitoring');
+    },
+    'config' => [ /* ... */ ],
+    'jobs' => [ /* ... */ ],
+],
+```
+
+### Available Events
+
+- **EVENT_JOB_BEFORE_RUN** (`jobBeforeRun`): Job is about to execute
+- **EVENT_JOB_AFTER_RUN** (`jobAfterRun`): Job completed successfully
+- **EVENT_JOB_ERROR** (`jobError`): Job threw exception
+- **EVENT_JOB_BLOCKED** (`jobBlocked`): Job prevented from running (e.g., single-instance lock)
+- **EVENT_JOB_TIMEOUT** (`jobTimeout`): Reserved for future use
+
+All events use `SchedulerJobEvent` class with typed properties for monitoring integration.
+
 ## Cleanup and safety
 
 - All jobs are executed via a SafeJobWrapper that catches exceptions and prevents worker crashes.
@@ -159,15 +199,6 @@ Configure a log target in your `console/config/main.php` if needed:
 
 - Requires PHP >= 8.0, Yii2 ~2.0.14
 - Optional `pcntl` for graceful signal handling (SIGINT/SIGTERM). On platforms without `pcntl`, the daemon stops when too many ticks are missed (configurable).
-
-## Release checklist
-
-1. Bump version in `composer.json` (e.g. 1.0.0 -> 1.0.1).
-2. Update `CHANGELOG.md` with added/changed/fixed sections.
-3. Tag release: `git tag v1.0.0 && git push --tags`.
-4. Publish to Packagist (ensure GitHub repo is public / accessible).
-5. Verify installation: `composer require ldkafka/yii2-scheduler` in a clean project.
-6. (Optional) Set up a queue worker: `php yii queue/listen` and run daemon.
 
 ## License
 

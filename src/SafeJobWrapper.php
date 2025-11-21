@@ -48,14 +48,50 @@ class SafeJobWrapper extends BaseObject implements JobInterface
 
             $job = new $this->innerClass($this->innerConfig);
 
+            // Trigger EVENT_JOB_BEFORE_RUN for monitoring
+            $scheduler = (\Yii::$app->has('scheduler') ? \Yii::$app->get('scheduler') : null);
+            $startTime = microtime(true);
+            if ($scheduler instanceof Scheduler) {
+                $event = new SchedulerJobEvent();
+                $event->job_class = $this->innerClass;
+                $event->job_config = $this->innerConfig;
+                $event->start_time = $startTime;
+                $scheduler->trigger(Scheduler::EVENT_JOB_BEFORE_RUN, $event);
+            }
+
             // Call the job's execute method; any return value is ignored by queue
             $result = $job->execute($queue);
             // Capture result for synchronous runners
             $this->lastResult = (bool)$result;
+            
+            // Trigger EVENT_JOB_AFTER_RUN for monitoring
+            if ($scheduler instanceof Scheduler) {
+                $event = new SchedulerJobEvent();
+                $event->job_class = $this->innerClass;
+                $event->job_config = $this->innerConfig;
+                $event->result = $result;
+                $event->start_time = $startTime;
+                $event->end_time = microtime(true);
+                $scheduler->trigger(Scheduler::EVENT_JOB_AFTER_RUN, $event);
+            }
         } catch (\Throwable $e) {
             $jobClass = $this->innerClass ?? 'unknown';
             Yii::error("SafeJobWrapper caught exception in {$jobClass}: " . $e->getMessage(), 'scheduler');
             $this->lastResult = false;
+            
+            // Trigger EVENT_JOB_ERROR for monitoring
+            $scheduler = (\Yii::$app->has('scheduler') ? \Yii::$app->get('scheduler') : null);
+            if ($scheduler instanceof Scheduler) {
+                $event = new SchedulerJobEvent();
+                $event->job_class = $this->innerClass;
+                $event->job_config = $this->innerConfig;
+                $event->error = $e->getMessage();
+                $event->exception = get_class($e);
+                $event->trace = $e->getTraceAsString();
+                $event->error_time = microtime(true);
+                $scheduler->trigger(Scheduler::EVENT_JOB_ERROR, $event);
+            }
+            
             // Do not rethrow; prevents crashing the queue worker
         } finally {
             // Best-effort cleanup: notify Scheduler to remove runtime entry
